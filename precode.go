@@ -64,7 +64,7 @@ func getTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 // Обработчик для отправки задачи на сервер
-func postTask(w http.ResponseWriter, r *http.Request) {
+func createTask(w http.ResponseWriter, r *http.Request) {
 	var task Task
 	var buf bytes.Buffer
 
@@ -81,8 +81,7 @@ func postTask(w http.ResponseWriter, r *http.Request) {
 
 	tasks[task.ID] = task
 
-	// в заголовок записываем тип контента JSON
-	w.Header().Set("Content-Type", "application/json")
+	// в заголовок можно НЕ записывать тип контента, т.к. тело ответа не будет возвращаться в ответе
 
 	// так как все успешно, то статус OK
 	w.WriteHeader(http.StatusCreated)
@@ -103,7 +102,7 @@ func getTask(w http.ResponseWriter, r *http.Request) {
 	// сериализуем данные из найденного элемента мапы
 	resp, err := json.Marshal(task)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -132,21 +131,14 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 	// Удаляем из мапы найденный элемент
 	delete(tasks, id)
 
-	// сериализуем данные из мапы tasks
-	resp, err := json.Marshal(tasks)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// в заголовок записываем тип контента JSON
-	w.Header().Set("Content-Type", "application/json")
+	// в заголовок записываем тип контента "Простой текст"
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 	// так как все успешно, то статус OK
 	w.WriteHeader(http.StatusOK)
 
 	// записываем сериализованные в JSON данные в тело ответа
-	w.Write(resp)
+	w.Write([]byte(fmt.Sprint("Задача с ID ", id, " успешно удалена")))
 }
 
 func main() {
@@ -158,8 +150,8 @@ func main() {
 	// регистрируем в роутере эндпоинт `/tasks` с методом GET, для которого используется обработчик `getTasks`
 	r.Get("/tasks", getTasks)
 
-	// регистрируем в роутере эндпоинт `/tasks` с методом POST, для которого используется обработчик `postTask`
-	r.Post("/tasks", postTask)
+	// регистрируем в роутере эндпоинт `/tasks` с методом POST, для которого используется обработчик `createTask`
+	r.Post("/tasks", createTask)
 
 	// регистрируем в роутере эндпоинт `/tasks/{id}` с методом GET, для которого используется обработчик `getTask`
 	r.Get("/tasks/{id}", getTask)
